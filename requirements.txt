@@ -1,3 +1,4 @@
 streamlit
 requests
 cohere
+bs4
