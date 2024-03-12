@@ -78,49 +78,51 @@ if st.button("Submit"):
     # Hackernews search results
     search_results = search(user_input)
     
-    # we only keep the comment_text's raw text for the rerank model
-    comment_texts = [BeautifulSoup(search_result['comment_text'], features="html.parser").get_text() for search_result in search_results]
-    
-    # we rerank the search results using the rerank model, keeping the top 12 results out of the initial 25
-    reranked_results = co.rerank(query=user_input, documents=comment_texts, top_n=12, model='rerank-english-v2.0')
-    
-    # we only keep the text of the reranked results for the prompt    
-    reranked_results_text_only = [result.document['text'] for result in reranked_results]
-    
-    # context information formatted for the prompt
-    reranked_results_formatted = '\n\n - '.join(reranked_results_text_only)
-    
-    prompt = f"""
-      Context information is below.
-      
-      {reranked_results_formatted}
-      
-      Given the context information and not prior knowledge, answer the query below.
-      
-      Query: {user_input}
-      
-      Answer: 
-    """
-
-    # Cohere chat response
-    response = co.chat(
-        prompt, 
-        model="command-r", 
-        temperature=0.5
-    )
-
-    # Clear loading message
-    st.empty()
-
-    st.write("Answer: ")
-    st.write(response.text)
-
-    # Display raw search results
-    st.write("Raw Search Results: ")
-    for result in search_results:
-        st.json(result)
+    if not search_results:
+        st.write("I'm sorry your query didn't return any results from the Hacker News search API.")
+    else:
+        # we only keep the comment_text's raw text for the rerank model
+        comment_texts = [BeautifulSoup(search_result['comment_text'], features="html.parser").get_text() for search_result in search_results]
         
-    # Display the prompt used for the chat API
-    st.write("Prompt: ")
-    st.write(prompt)
-    
+        # we rerank the search results using the rerank model, keeping the top 12 results out of the initial 25
+        reranked_results = co.rerank(query=user_input, documents=comment_texts, top_n=12, model='rerank-english-v2.0')
+        
+        # we only keep the text of the reranked results for the prompt    
+        reranked_results_text_only = [result.document['text'] for result in reranked_results]
+        
+        # context information formatted for the prompt
+        reranked_results_formatted = '\n\n - '.join(reranked_results_text_only)
+        
+        prompt = f"""
+        Context information is below.
+        
+        {reranked_results_formatted}
+        
+        Given the context information and not prior knowledge, answer the query below.
+        
+        Query: {user_input}
+        
+        Answer: 
+        """
+
+        # Cohere chat response
+        response = co.chat(
+            prompt, 
+            model="command-r", 
+            temperature=0.5
+        )
+
+        # Clear loading message
+        st.empty()
+
+        st.write("Answer: ")
+        st.write(response.text)
+
+        # Display raw search results
+        st.write("Raw Search Results: ")
+        for result in search_results:
+            st.json(result)
+            
+        # Display the prompt used for the chat API
+        st.write("Prompt: ")
+        st.write(prompt)
